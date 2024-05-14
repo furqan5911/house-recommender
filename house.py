@@ -2,12 +2,18 @@ import streamlit as st
 import pandas as pd
 import joblib
 
-# Load models
-clf_et = joblib.load('extra_trees_pipeline.pkl.gz')
-clf_knn = joblib.load('knn_pipeline.pkl')
-regressor_xgb = joblib.load('regressor_model.pkl')
+# Cache the loading of models
+@st.cache_resource
+def load_models():
+    clf_et = joblib.load('extra_trees_pipeline.pkl.gz')
+    clf_knn = joblib.load('knn_pipeline.pkl')
+    regressor_xgb = joblib.load('regressor_model.pkl')
+    return clf_et, clf_knn, regressor_xgb
+
+clf_et, clf_knn, regressor_xgb = load_models()
 
 # Define function to predict location from each model
+@st.cache_data
 def predict_location(bath, balcony, total_sqft_int, bhk):
     input_data = pd.DataFrame({'bath': [bath],
                                'balcony': [balcony],
@@ -20,6 +26,7 @@ def predict_location(bath, balcony, total_sqft_int, bhk):
     return location_pred_et, location_pred_knn
 
 # Define function to predict price using XGBoost regressor
+@st.cache_data
 def predict_price(location, bath, balcony, total_sqft_int, bhk):
     input_data = pd.DataFrame({'location': [location],
                                'bath': [bath],
@@ -35,7 +42,7 @@ st.title('House Recommendation System')
 bath = st.number_input('Number of Bathrooms', min_value=1, max_value=10, step=1)
 balcony = st.selectbox('Number of Balconies', options=[0, 1, 2, 3])
 
-total_sqft_int = st.slider('Total Square Feet', min_value=350, max_value=30500, step=1, value=(350))
+total_sqft_int = st.slider('Total Square Feet', min_value=350, max_value=30500, step=1, value=350)
 bhk = st.number_input('Number of Bedrooms (BHK)', min_value=1, max_value=10, step=1)
 
 if st.button('Predict'):
